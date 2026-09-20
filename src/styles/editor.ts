@@ -15,6 +15,18 @@ export const styleEditor = css`
     width: 100%;
   }
 
+  .device-picker {
+    margin: 1rem 0;
+    padding: 0.75rem;
+    border: 1px solid var(--divider-color);
+    border-radius: 8px;
+  }
+
+  .device-picker p {
+    margin-top: 0;
+    color: var(--secondary-text-color);
+  }
+
   .entity .handle {
     padding-right: 8px;
     cursor: move;

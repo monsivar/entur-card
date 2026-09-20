@@ -15,6 +15,7 @@
     "minutes": "minutes",
     "hour": "hour",
     "hours": "hours"
+    ,"unknown": "No upcoming departure"
   },
   "editor": {
     "name": "Name",
@@ -22,6 +23,8 @@
     "destination": "Destination",
     "display_time": "Display time",
     "divide_routes": "Divide routes",
+    "group_by_device": "Group platforms by stop place",
+    "devices": "Choose Entur stop places",
     "divide_lines": "Divide lines",
     "clock_icon_state": {
       "title": "Clock icon",

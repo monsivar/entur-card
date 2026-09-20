@@ -15,6 +15,7 @@
     "minutes": "minutter",
     "hour": "time",
     "hours": "timer"
+    ,"unknown": "Ingen kommende avgang"
   },
   "editor": {
     "name": "Navn",
@@ -22,6 +23,8 @@
     "destination": "Destinasjon",
     "display_time": "Vis tid",
     "divide_routes": "Separer ruter",
+    "group_by_device": "Gruppér plattformer per stoppested",
+    "devices": "Velg Entur-stoppesteder",
     "divide_lines": "Separer linjer",
     "clock_icon_state": {
       "title": "Klokkesymbol",

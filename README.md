@@ -1,131 +1,123 @@
 # Entur Card
 
-[![hacs][hacs-badge]][hacs-url]
-[![GitHub Release][releases-shield]][releases]
-[![License][license-shield]](LICENSE)
-![Project Maintenance][maintenance-shield]
-[![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
+Et brukervennlig Lovelace-kort for Home Assistant-integrasjonen
+[`entur_public_transport`](https://www.home-assistant.io/integrations/entur_public_transport/).
 
-This card is made to work with the [Entur public transport](https://www.home-assistant.io/components/sensor.entur_public_transport/) component. You will have to configure the Entur component before you can use this card.
-Click [here](https://stoppested.entur.org) to get stop id's for your setup.
+Kortet er tilpasset den moderniserte Entur-integrasjonen i
+[Home Assistant Core PR #182523](https://github.com/home-assistant/core/pull/182523).
+PR-en introduserer søkbare stoppesteder, konfigurasjon per stoppested,
+støtte for hele stoppesteder eller valgte plattformer, stabile entiteter og
+samling av plattformsensorer under samme Home Assistant-enhet.
 
-![Example][exampleimg]
+## Hva er nytt i 3.0
 
-> ⚠️ Unfortunately there is currently no provided method to define a start and a stop station with entur. But you can add a whitelist of _lines_ so that you can force only relevant results.
+- Velg Entur-stoppesteder direkte i korteditoren når enhetene finnes i entity registry.
+- Velg én eller flere Entur-enheter i stedet for å skrive inn alle sensorene manuelt.
+- Gruppér plattformsensorer under stoppestedets Home Assistant-enhet.
+- Støtte for både eksisterende attributter og en fremtidig strukturert `departures`-liste.
+- Mer robust visning av tid, inkludert avganger rundt midnatt.
+- Fungerer med både gamle YAML-sensorer og nye UI-konfigurerte stoppesteder.
+- Oppdatert visning av destinasjon, forsinkelse, sanntidsstatus og manglende avganger.
 
-### Features
-
-- 🛠 Editor (no need to edit `yaml`)
-- 🌎 Internationalization
-- 😍 Customize routes and lines
-- 🌓 Light and dark theme support
-
-## Installation
+## Installasjon
 
 ### HACS
 
-Entur Card is available in [HACS][hacs] (Home Assistant Community Store).
+Installer kortet fra HACS under **Frontend**, og legg til ressursen når Home
+Assistant ber om det.
 
-1. Install HACS if you don't have it already
-2. Open HACS in Home Assistant
-3. Go to "Frontend" section
-4. Click button with "+" icon
-5. Search for "Entur Card"
+### Manuell installasjon
 
-### Manual
+1. Last ned `entur-card.js` fra siste release.
+2. Legg filen i `config/www`.
+3. Legg til `/local/entur-card.js` som en JavaScript Module under
+   **Settings → Dashboards → Resources**.
 
-1. Download `entur-card.js` file from the [latest-release].
-2. Put `entur-card.js` file into your `config/www` folder.
-3. Add reference to `entur-card.js` in Dashboard. There's two way to do that:
-   - **Using UI:** _Settings_ → _Dashboards_ → _More Options icon_ → _Resources_ → _Add Resource_ → Set _Url_ as `/local/entur-card.js` → Set _Resource type_ as `JavaScript Module`.
-     **Note:** If you do not see the Resources menu, you will need to enable _Advanced Mode_ in your _User Profile_
-   - **Using YAML:** Add following code to `lovelace` section.
-     ```yaml
-     resources:
-       - url: /local/entur-card.js
-         type: js
-     ```
+## Anbefalt oppsett
 
----
-
-## Card options
-
-| Field             | Type               | Description                                        |
-| ----------------- | ------------------ | -------------------------------------------------- |
-| custom:entur-card | `string(required)` |
-| name              | `string`           | Name of the card                                   |
-| divide_routes     | `true/false`       | Add a line divider between routes                  |
-| display_time      | `true/false`       | Displays the time in the header                    |
-| entities          | `list(required)`   | A list of entity IDs or entity objects, see below. |
-
-## Entity options
-
-| Field               | Type               | Description                                           |
-| ------------------- | ------------------ | ----------------------------------------------------- |
-| entity              | `string(required)` | Home Assistant entity ID.                             |
-| icon                | `string`           | Overrides the icon.                                   |
-| name                | `string`           | Overrides friendly name.                              |
-| destination         | `string`           | Display hardcoded destination name.                   |
-| clock_icon_state    | `string`           | None or `left` / `right` side of the time string.     |
-| extra_departures    | `string`           | `next` or `all`.                                      |
-| human_readable_time | `string`           | Show for `all`, `line`, `line_next` or `line_extras`. |
-| remaining_time      | `string`           | Show for `all`, `line`, `line_next` or `line_extras`. |
-
-## Entur configuration
+Når Entur-integrasjonen er satt opp fra brukergrensesnittet, velger du
+stoppestedene i korteditoren. Kortet henter da entitetene som ligger under de
+valgte Entur-enhetene.
 
 ```yaml
-sensor:
-  - platform: entur_public_transport
-    name: Transport
-    show_on_map: true
-    stop_ids:
-      - "NSR:StopPlace:5850" # Grorud T bus stop
-      - "NSR:StopPlace:548" # Bergen train station
-      - "NSR:StopPlace:58652" # Mortavika ferry
+type: custom:entur-card
+name: Neste avganger
+devices:
+  - 1234567890abcdef
+  - fedcba0987654321
+group_by_device: true
+display_time: true
+divide_routes: true
 ```
 
-## Manual card configuration
+`devices` bruker Home Assistants `device_id`. I korteditoren trenger du normalt
+ikke skrive disse ID-ene manuelt; velg stoppestedene med avkrysningsboksene.
+
+## Manuell entitetskonfigurasjon
+
+Eksisterende oppsett fungerer fortsatt:
 
 ```yaml
-- type: custom:entur-card
-  name: Rutetider
-  entities:
-    - entity: sensor.transport_grorud_t
-      extra_departures: all
-      divide_lines: true
-      clock_icon_state: left
-    - entity: sensor.transport_bergen_stasjon
-      human_readable_time: line
-    - entity: sensor.transport_mortavika_ferjekai
-      remaining_time: all
-      clock_icon_state: left
-  display_time: true
-  divide_routes: true
+type: custom:entur-card
+name: Rutetider
+entities:
+  - entity: sensor.entur_oslo_s
+    extra_departures: all
+    remaining_time: all
+    clock_icon_state: left
+  - entity: sensor.entur_nationaltheatret
+    extra_departures: next
+display_time: true
+divide_routes: true
 ```
 
-## Contributions are welcome!
+En entitet kan også angis som en ren tekststreng:
 
----
+```yaml
+entities:
+  - sensor.entur_oslo_s
+```
 
-⭐️ this repository if you found it useful ❤️
+## Kortinnstillinger
 
-[![BuyMeCoffee][buymecoffebadge2]][buymecoffee]
+| Innstilling | Type | Beskrivelse |
+| --- | --- | --- |
+| `name` | tekst | Overskrift på kortet. |
+| `entities` | liste | Eksplisitte sensor-entiteter eller entitetsobjekter. |
+| `devices` | liste | Entur-enheter som skal oppdages automatisk. |
+| `group_by_device` | boolsk | Viser en overskrift per stoppested/enhet. |
+| `display_time` | boolsk | Viser klokkeslett i kortoverskriften. |
+| `divide_routes` | boolsk | Skiller stoppesteder med en linje. |
+| `show_empty` | boolsk | Viser forklaring når ingen avganger eller sensorer finnes. |
 
-<!-- Badges -->
+## Innstillinger per sensor
 
-[buymecoffee]: https://www.buymeacoffee.com/jonkristian
-[buymecoffeebadge]: https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg?style=for-the-badge
-[buymecoffebadge2]: https://bmc-cdn.nyc3.digitaloceanspaces.com/BMC-button-images/custom_images/white_img.png
-[hacs-url]: https://github.com/hacs/integration
-[hacs-badge]: https://img.shields.io/badge/HACS-default-orange.svg?style=for-the-badge
-[forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=for-the-badge
-[forum]: https://community.home-assistant.io/
-[license-shield]: https://img.shields.io/github/license/jonkristian/entur-card.svg?style=for-the-badge
-[maintenance-shield]: https://img.shields.io/badge/maintainer-Jon%20Kristian%20Nilsen%20%40jonkristian-blue.svg?style=for-the-badge
-[releases-shield]: https://img.shields.io/github/release/jonkristian/entur-card.svg?style=for-the-badge
-[releases]: https://github.com/jonkristian/entur-card/releases
+| Innstilling | Beskrivelse |
+| --- | --- |
+| `name` | Overstyrer sensornavnet. |
+| `destination` | Legger til en fast destinasjonstekst. |
+| `extra_departures` | `next` viser neste avgang; `all` viser alle tilgjengelige avganger. |
+| `remaining_time` | `line`, `line_next`, `line_extras` eller `all`. |
+| `human_readable_time` | Viser «Avgang om …» for samme verdier som over. |
+| `clock_icon_state` | `left` eller `right`. |
+| `divide_lines` | Skiller avgangene for én sensor. |
 
-<!-- References -->
+## Datakompatibilitet
 
-[hacs]: https://hacs.xyz
-[exampleimg]: example.png
+Kortet bruker den strukturerte `departures`-attributten når integrasjonen
+tilbyr den. Inntil den er tilgjengelig, støttes de eksisterende attributtene
+fra Entur-integrasjonen: `route`, `due_at`, `next_route`, `next_due_at`,
+`delay`, `real_time` og `departure_#3` og videre.
+
+Det betyr at kortet kan brukes under migreringen til oppsettet fra
+[Core PR #182523](https://github.com/home-assistant/core/pull/182523), uten at
+eksisterende YAML-konfigurasjoner må bygges om.
+
+Kortet henter ikke data direkte fra Entur. All API-kommunikasjon, filtrering,
+oppdateringsfrekvens og stoppestedlogikk skal fortsatt ligge i Home Assistant-
+integrasjonen.
+
+## Bidrag
+
+Forslag og pull requests er velkomne. Test særlig kombinasjonene stoppested,
+alle plattformer, valgte plattformer, YAML-sensorer og avganger rundt midnatt.

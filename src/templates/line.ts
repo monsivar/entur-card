@@ -1,25 +1,21 @@
 import { LitElement, html, TemplateResult, CSSResultGroup } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
-import "./line-extra";
-import "./human-readable"
-
+import "./human-readable";
 import { cardStyle } from "../styles/card";
-
-import dayjs from "dayjs";
-import "dayjs/locale/nb";
-
-import relativeTime from "dayjs/plugin/relativeTime";
-import updateLocale from "dayjs/plugin/updateLocale";
-
-dayjs.extend(updateLocale);
-dayjs.extend(relativeTime);
+import setupCustomlocalize from "../localize/localize";
+import type { EnturCardEntityConfig } from "../types";
+import {
+  departureClockTime,
+  departureMinutes,
+  getDepartures,
+  ResolvedDeparture,
+} from "../utils";
 
 @customElement("entur-card-line")
 export class EnturCardLine extends LitElement {
-  @property() departures;
   @property() hass;
-  @property() entity;
+  @property() entity!: EnturCardEntityConfig;
   @property() route;
 
   static get styles(): CSSResultGroup {
@@ -27,114 +23,79 @@ export class EnturCardLine extends LitElement {
   }
 
   protected render(): TemplateResult {
-    if (!this.entity || !this.route) {
-      return html``;
+    if (!this.entity || !this.route) return html``;
+
+    const departures = getDepartures(this.route);
+    if (!departures.length) {
+      return html`<div class="entur-empty">${setupCustomlocalize(this.hass)("common.unknown")}</div>`;
     }
 
-    const show_next_line =
-      this.entity.extra_departures === "all" ||
-      this.entity.extra_departures === "next"
-      ? true
-      : false;
-
-    const line_human_readable =
-      this.entity.human_readable_time === 'line' ||
-      this.entity.human_readable_time === 'all'
-      ? true
-      : false;
-
-    const line_next_human_readable =
-    this.entity.human_readable_time === 'line_next' ||
-    this.entity.human_readable_time === 'all'
-    ? true
-    : false;
-
-    let departures = {};
-    if (this.entity.extra_departures == "all") {
-      departures = Object.keys(this.route.attributes)
-        .filter((v) => v.startsWith("departure"))
-        .map((e) => this.route.attributes[e]);
-    }
-
-    this.departures = departures;
+    const visible = this.entity.extra_departures === "all"
+      ? departures
+      : departures.slice(0, this.entity.extra_departures === "next" ? 2 : 1);
 
     return html`
-      <div class="entur-line">
-        <div class="entur-line__header">
-          ${this.route.attributes.route}
-          ${line_human_readable ? html`
-          <entur-card-human-readable
-            .hass=${this.hass}
-            .due=${this.route.attributes.due_at}
-            .delay=${this.route.attributes.delay}
-          ></entur-card-human-readable>
-          `:html``}
-        </div>
-        ${this.route.attributes.delay > 0
-        ? html`
-            <div class="entur-line__delay entur-column">
-              <ha-icon
-                class="entur-icon"
-                icon="mdi:clock-alert-outline"
-              ></ha-icon>
-              ${this.route.attributes.delay} min.
-            </div>
-          `
-        : html``}
-
-        <div class="entur-line__due entur-column icon-${this.entity.clock_icon_state ?? "hidden"}">
-          <ha-icon class="entur-line__icon" icon="mdi:clock"></ha-icon>
-          ${this._renderTimeLeft("line", this.route.attributes.due_at)}
-        </div>
-      </div>
-
-      ${show_next_line ? html`
-        <div class="entur-line next ${this.entity.divide_lines? "divided": ""}">
-          <div class="entur-line__header">
-            ${this.route.attributes.next_route}
-            ${line_next_human_readable ? html`
-              <entur-card-human-readable
-                .hass=${this.hass}
-                .due=${this.route.attributes.next_due_at}
-                .delay=${this.route.attributes.next_delay}
-              ></entur-card-human-readable>
-            `:html``}
-          </div>
-          <div class="entur-line__due entur-column icon-${this.entity.clock_icon_state ?? "hidden"}">
-            <ha-icon class="entur-line__icon" icon="mdi:clock"></ha-icon>
-            ${this._renderTimeLeft("line_next", this.route.attributes.next_due_at)}
-          </div>
-        </div>
-      `
-      : html``}
-
-      ${this.entity.extra_departures === "all" ? html`
-        ${this.departures?.map((departure) => html`
-          <entur-card-line-extra
-            .hass=${this.hass}
-            .departure="${departure}"
-            .human_readable_time="${this.entity.human_readable_time}"
-            .remaining_time="${this.entity.remaining_time}"
-            .clock_icon_state="${this.entity.clock_icon_state}"
-            .divide_lines="${this.entity.divide_lines}"
-          ></entur-card-line-extra>
-        `
-      )}` : html``}
+      ${visible.map((departure, index) => this._renderDeparture(
+        departure,
+        index,
+      ))}
     `;
   }
 
-  private _renderTimeLeft(type: string, due_at: number) {
-    if (!due_at && !isNaN(due_at)) {
-      return html``;
-    }
+  private _renderDeparture(
+    departure: ResolvedDeparture,
+    index: number,
+  ): TemplateResult {
+    const type = index === 0 ? "line" : index === 1 ? "line_next" : "line_extras";
+    const humanReadable = this.entity.human_readable_time === "all"
+      || this.entity.human_readable_time === type;
+    const showRemaining = this.entity.remaining_time === "all"
+      || this.entity.remaining_time === type;
+    const minutes = departureMinutes(departure);
+    const clockTime = departureClockTime(departure);
+    const lineClass = index === 0 ? "entur-line" : `entur-line ${this.entity.divide_lines ? "divided" : ""}`;
+    const routeLabel = departure.destination
+      ? html`${departure.route}<span class="entur-destination">${departure.destination}</span>`
+      : html`${departure.route}`;
+    const customLocalize = setupCustomlocalize(this.hass);
 
-    if (
-      this.entity.remaining_time == type ||
-      this.entity.remaining_time == "all"
-    ) {
-      return html`${dayjs(due_at, "H:mm").fromNow(true)}`;
-    }
+    return html`
+      <div class="${lineClass}">
+        <div class="entur-line__header">
+          ${routeLabel}
+          ${!departure.realtime && departure.realtime !== undefined
+            ? html`<span class="entur-scheduled">ca.</span>`
+            : html``}
+          ${humanReadable
+            ? html`<entur-card-human-readable
+                .hass=${this.hass}
+                .departure=${departure}
+              ></entur-card-human-readable>`
+            : html``}
+        </div>
+        ${departure.delay && departure.delay > 0
+          ? html`<div class="entur-line__delay entur-column">
+              <ha-icon class="entur-icon" icon="mdi:clock-alert-outline"></ha-icon>
+              ${departure.delay} min
+            </div>`
+          : html``}
+        <div class="entur-line__due entur-column icon-${this.entity.clock_icon_state ?? "hidden"}">
+          <ha-icon class="entur-line__icon" icon="mdi:clock"></ha-icon>
+          ${showRemaining
+            ? this._renderRemaining(minutes, customLocalize)
+            : clockTime ?? this._renderRemaining(minutes, customLocalize)}
+        </div>
+      </div>
+    `;
+  }
 
-    return html`${due_at}`;
+  private _renderRemaining(
+    minutes: number | undefined,
+    localize: (key: string) => string,
+  ): TemplateResult {
+    if (minutes === undefined) return html`—`;
+    if (minutes <= 0) return html`${localize("common.departing")}`;
+    const label = localize(minutes === 1 ? "common.minute" : "common.minutes");
+    return html`${minutes} ${label}`;
   }
 }

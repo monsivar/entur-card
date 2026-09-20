@@ -1,7 +1,7 @@
 {
   "name": "entur-card",
-  "version": "2.0.1",
-  "description": "This card is made to work with the Entur public transport component.",
+  "version": "3.0.0",
+  "description": "A user-friendly Lovelace card for the modern Entur public transport integration.",
   "keywords": [
     "home-assistant",
     "homeassistant",

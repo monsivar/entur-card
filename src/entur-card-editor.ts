@@ -16,6 +16,8 @@ import globalElementLoader from "./globalElementLoader";
 import MwcListItem from "./mwc/list-item";
 import MwcSelect from "./mwc/select";
 import type {
+  DeviceRegistryEntry,
+  EntityRegistryEntry,
   EditorTarget,
   EnturCardConfig,
   SubElementEditorConfig,
@@ -23,6 +25,7 @@ import type {
 } from "./types";
 import { styleEditor } from "./styles/editor";
 import setupCustomlocalize from "./localize/localize";
+import { normalizeEntityConfig } from "./utils";
 import "./entur-card-entity-editor";
 
 let Sortable;
@@ -37,9 +40,11 @@ export class EnturCardEditor
   @state() private _attached = false;
   @state() private _renderEmptySortable = false;
   @state() private _subElementEditorConfig?: SubElementEditorConfig;
+  @state() private _enturDevices: DeviceRegistryEntry[] = [];
 
   private _entities?;
   private _sortable?;
+  private _registryLoaded = false;
 
   static get elementDefinitions() {
     return buildElementDefinitions(
@@ -64,9 +69,11 @@ export class EnturCardEditor
   public setConfig(config: EnturCardConfig): void {
     this._config = {
       name: "",
+      entities: [],
       ...config,
     };
-    this._entities = config.entities;
+    this._entities = this._config.entities ?? [];
+    this._registryLoaded = false;
   }
 
   protected render(): TemplateResult {
@@ -125,6 +132,35 @@ export class EnturCardEditor
           ></ha-checkbox>
         </ha-formfield>
 
+        <ha-formfield .label=${customLocalize("editor.group_by_device")}>
+          <ha-checkbox
+            @change="${this._valueChanged}"
+            .checked=${this._config.group_by_device}
+            .configValue="${"group_by_device"}"
+          ></ha-checkbox>
+        </ha-formfield>
+
+        ${this._enturDevices.length
+          ? html`
+              <div class="device-picker">
+                <p>${customLocalize("editor.devices")}</p>
+                ${this._enturDevices.map(
+                  (device) => html`
+                    <ha-formfield
+                      .label=${device.name_by_user ?? device.name ?? device.id}
+                    >
+                      <ha-checkbox
+                        .deviceId=${device.id}
+                        .checked=${this._config.devices?.includes(device.id)}
+                        @change=${this._deviceChanged}
+                      ></ha-checkbox>
+                    </ha-formfield>
+                  `
+                )}
+              </div>
+            `
+          : html``}
+
         <div class="entities">
           ${guard([this._entities, this._renderEmptySortable], () =>
             this._renderEmptySortable
@@ -139,9 +175,9 @@ export class EnturCardEditor
                         <div class="special-row">
                           <div>
                             <span
-                              >${route.name ? route.name : route.entity}</span
+                              >${normalizeEntityConfig(route).name ?? normalizeEntityConfig(route).entity}</span
                             >
-                            <span class="secondary">${route.entity}</span>
+                            <span class="secondary">${normalizeEntityConfig(route).entity}</span>
                           </div>
                         </div>
                       `}
@@ -249,10 +285,6 @@ export class EnturCardEditor
     const attachedChanged = changedProps.has("_attached");
     const entitiesChanged = changedProps.has("entities");
 
-    if (!entitiesChanged && !attachedChanged) {
-      return;
-    }
-
     if (attachedChanged && !this._attached) {
       // Tear down sortable, if available
       this._sortable?.destroy();
@@ -262,12 +294,50 @@ export class EnturCardEditor
 
     if (!this._sortable && this._entities) {
       this._createSortable();
-      return;
     }
 
-    if (entitiesChanged) {
+    if (entitiesChanged && this._entities) {
       this._handleEntitiesChanged();
     }
+
+    if (!this._registryLoaded && this.hass) {
+      this._registryLoaded = true;
+      void this._loadEnturDevices();
+    }
+  }
+
+  private async _loadEnturDevices(): Promise<void> {
+    const callWS = (this.hass as unknown as {
+      callWS?: (message: { type: string }) => Promise<unknown>;
+    }).callWS;
+    if (!callWS) return;
+
+    try {
+      const [entities, devices] = await Promise.all([
+        callWS({ type: "config/entity_registry/list" }),
+        callWS({ type: "config/device_registry/list" }),
+      ]);
+      const enturEntityEntries = (Array.isArray(entities) ? entities : []) as EntityRegistryEntry[];
+      const deviceIds = new Set(
+        enturEntityEntries
+          .filter((entry) => entry.platform === "entur_public_transport" && entry.device_id)
+          .map((entry) => entry.device_id as string)
+      );
+      this._enturDevices = (Array.isArray(devices) ? devices : [])
+        .filter((device) => deviceIds.has(device.id)) as DeviceRegistryEntry[];
+    } catch {
+      this._enturDevices = [];
+    }
+  }
+
+  private _deviceChanged(ev: Event): void {
+    const target = ev.currentTarget as HTMLElement & { checked?: boolean; deviceId?: string };
+    if (!target.deviceId) return;
+    const devices = new Set(this._config.devices ?? []);
+    if (target.checked) devices.add(target.deviceId);
+    else devices.delete(target.deviceId);
+    this._config = { ...this._config, devices: [...devices] };
+    fireEvent(this, "config-changed", { config: this._config });
   }
 
   private async _handleEntitiesChanged(): Promise<void> {

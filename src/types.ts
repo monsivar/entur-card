@@ -1,5 +1,17 @@
 import { ActionConfig, LovelaceCardConfig } from "custom-card-helpers";
 
+export interface EnturDeparture {
+  route?: string;
+  route_id?: string;
+  destination?: string;
+  expected_at?: string;
+  due_at?: string;
+  time?: string;
+  minutes?: number;
+  delay?: number;
+  realtime?: boolean;
+}
+
 export interface EnturCardEntityConfig {
   entity?: string;
   name?: string;
@@ -14,13 +26,28 @@ export interface EnturCardEntityConfig {
 
 export interface EnturCardConfig extends LovelaceCardConfig {
   entity?: string;
-  entities: any[];
-  state: object;
-  divide_routes: boolean;
-  display_time: boolean;
+  entities?: Array<EnturCardEntityConfig | string>;
+  devices?: string[];
+  state?: object;
+  divide_routes?: boolean;
+  display_time?: boolean;
+  group_by_device?: boolean;
+  show_empty?: boolean;
   name?: string;
   show_warning?: boolean;
   show_error?: boolean;
+}
+
+export interface EntityRegistryEntry {
+  entity_id: string;
+  device_id?: string | null;
+  platform?: string;
+}
+
+export interface DeviceRegistryEntry {
+  id: string;
+  name?: string | null;
+  name_by_user?: string | null;
 }
 
 export interface SubElementEditorConfig {

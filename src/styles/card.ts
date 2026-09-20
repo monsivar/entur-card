@@ -14,6 +14,18 @@ export const cardStyle = css`
     align-self: flex-end;
   }
 
+  .entur-device-group__title {
+    padding: 0.75rem 1rem 0.25rem;
+    color: var(--secondary-text-color);
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .entur-empty {
+    padding: 1rem;
+    color: var(--secondary-text-color);
+  }
+
   .entur-column {
     display: flex;
     flex-direction: row;
@@ -86,6 +98,21 @@ export const cardStyle = css`
     color: var(--primary-text-color);
     font-size: 14px;
     font-weight: 400;
+  }
+
+  .entur-destination,
+  .entur-scheduled {
+    color: var(--secondary-text-color);
+    font-size: 0.85em;
+    font-weight: 400;
+  }
+
+  .entur-destination::before {
+    content: " → ";
+  }
+
+  .entur-scheduled {
+    margin-left: 0.35rem;
   }
 
   .entur-line__hr {
