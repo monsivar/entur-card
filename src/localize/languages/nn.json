@@ -15,7 +15,8 @@
     "minutes": "minutter",
     "hour": "time",
     "hours": "timer"
-    ,"unknown": "Ingen komande avgang"
+    ,"unknown": "Ingen komande avgang",
+    "all_departures": "Alle avgangar"
   },
   "editor": {
     "name": "Namn",
@@ -25,6 +26,12 @@
     "divide_routes": "Separer ruter",
     "group_by_device": "Gruppér plattformer per stoppestad",
     "devices": "Vel Entur-stoppestader",
+    "search_devices": "Søk etter stoppestad",
+    "no_devices": "Ingen stoppestader samsvarar med søket",
+    "show_stop_place": "Vis òg avgangar for heile stoppestaden",
+    "advanced_entities": "Avansert entitetsoppsett",
+    "advanced_entities_help": "Bruk dette for eldre YAML-oppsett eller individuelle visningsinnstillingar.",
+    "entity": "Entitet",
     "divide_lines": "Separer linjer",
     "clock_icon_state": {
       "title": "Klokkesymbol",

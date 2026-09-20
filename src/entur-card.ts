@@ -14,6 +14,7 @@ import "./templates/line";
 import dayjs from "dayjs";
 import "dayjs/locale/nb";
 import { cardStyle } from "./styles/card";
+import setupCustomlocalize from "./localize/localize";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 (window as any).customCards = (window as any).customCards || [];
@@ -112,14 +113,54 @@ export class EnturCard extends LitElement {
     return device?.name_by_user ?? device?.name ?? undefined;
   }
 
+  private _isWholeStopEntity(
+    entry: EntityRegistryEntry,
+    route: { attributes: Record<string, unknown> }
+  ): boolean {
+    const uniqueId = entry.unique_id?.toLowerCase() ?? "";
+    if (uniqueId.includes(":stopplace:")) return true;
+    if (uniqueId.includes(":quay:")) return false;
+
+    const searchable = [
+      entry.entity_id,
+      entry.original_name ?? "",
+      typeof route.attributes.friendly_name === "string"
+        ? route.attributes.friendly_name
+        : "",
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return /stop[ _-]?place|whole[ _-]?stop/.test(searchable);
+  }
+
   private _renderableEntities(): RenderableEntity[] {
     const configured = (this.config?.entities ?? [])
       .map((item) => normalizeEntityConfig(item))
       .filter((item) => Boolean(item.entity));
     const selectedDevices = new Set(this.config?.devices ?? []);
-    const discovered = this._entityRegistry
+    const discoveredEntries = this._entityRegistry
       .filter((item) => item.device_id && selectedDevices.has(item.device_id))
-      .filter((item) => Boolean(this.hass.states[item.entity_id]))
+      .filter((item) => Boolean(this.hass.states[item.entity_id]));
+    const devicesWithPlatforms = new Set(
+      discoveredEntries
+        .filter((item) => {
+          const route = this.hass.states[item.entity_id];
+          return route && !this._isWholeStopEntity(item, route);
+        })
+        .map((item) => item.device_id)
+    );
+    const discovered = discoveredEntries
+      .filter((item) => {
+        if (this.config?.show_stop_place) return true;
+        const route = this.hass.states[item.entity_id];
+        return (
+          !route ||
+          !item.device_id ||
+          !this._isWholeStopEntity(item, route) ||
+          !devicesWithPlatforms.has(item.device_id)
+        );
+      })
       .map((item) => ({ config: { entity: item.entity_id }, entityId: item.entity_id, deviceId: item.device_id ?? undefined }));
 
     const explicit = configured
@@ -181,6 +222,21 @@ export class EnturCard extends LitElement {
     const route = this.hass.states[item.entityId];
     if (!route) return html``;
 
+    const friendlyName =
+      typeof route.attributes.friendly_name === "string"
+        ? route.attributes.friendly_name
+        : item.entityId;
+    const localize = setupCustomlocalize(this.hass);
+    let displayName = item.config.name ?? friendlyName;
+    if (!item.config.name && item.deviceName) {
+      const prefix = `${item.deviceName} `;
+      if (friendlyName === item.deviceName) {
+        displayName = localize("common.all_departures");
+      } else if (friendlyName.startsWith(prefix)) {
+        displayName = friendlyName.slice(prefix.length);
+      }
+    }
+
     return html`
       <div class="entur-route ${this.config.divide_routes ? "divided" : ""}">
         <ha-icon
@@ -188,7 +244,7 @@ export class EnturCard extends LitElement {
           icon="${item.config.icon ? item.config.icon : route.attributes.icon ?? "mdi:bus"}"
         ></ha-icon>
         <h2 class="entur-route__name">
-          ${item.config.name ?? route.attributes.friendly_name ?? item.entityId}
+          ${displayName}
           ${item.config.destination
             ? html`<ha-icon class="entur-icon" icon="mdi:chevron-right"></ha-icon>${item.config.destination}`
             : html``}

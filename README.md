@@ -28,8 +28,13 @@ making it useful with the proposed Core update.
 ## What this update adds
 
 - Select one or more Entur devices in the visual card editor.
+- Search stop places by name in the visual editor and see how many sensors each
+  stop place provides.
 - Discover the sensors belonging to selected stop-place devices automatically.
 - Group platform sensors under their Home Assistant stop-place device.
+- Prefer platform sensors when they are available, avoiding a duplicate
+  whole-stop row by default.
+- Keep legacy and per-entity settings available in a compact advanced section.
 - Accept both explicit entity objects and plain entity ID strings.
 - Read a future structured `departures` attribute when available.
 - Fall back to the existing Entur attributes during migration.
@@ -71,7 +76,8 @@ divide_routes: true
 
 `devices` contains Home Assistant `device_id` values. Normally these do not
 need to be entered manually; select the stop places using the checkboxes in
-the visual editor.
+the visual editor. The editor supports searching by stop-place name and shows
+the number of discoverable Entur sensors for each device.
 
 ## Existing entity configuration
 
@@ -108,6 +114,7 @@ entities:
 | `group_by_device` | boolean | Show a heading for each stop-place device. |
 | `display_time` | boolean | Show the current time in the card heading. |
 | `divide_routes` | boolean | Separate stop-place rows with a divider. |
+| `show_stop_place` | boolean | Keep the whole-stop sensor when platform sensors are available. Defaults to `false` for device discovery. |
 | `show_empty` | boolean | Show an explanation when no sensors or departures are available. |
 
 ## Per-entity options
@@ -128,6 +135,11 @@ The card uses the structured `departures` attribute when the integration
 provides it. During the transition it also supports the existing attributes:
 `route`, `due_at`, `next_route`, `next_due_at`, `delay`, `real_time` and
 `departure_#3` and subsequent fields.
+
+When a selected device exposes both a whole-stop sensor and platform sensors,
+device discovery displays the platform sensors and suppresses the duplicate
+whole-stop sensor. Set `show_stop_place: true` when the whole-stop view is also
+useful. Explicit `entities` configurations are left unchanged.
 
 This allows the card to be released as a companion update to
 [home-assistant/core#182523](https://github.com/home-assistant/core/pull/182523)

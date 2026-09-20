@@ -15,10 +15,11 @@ export const cardStyle = css`
   }
 
   .entur-device-group__title {
-    padding: 0.75rem 1rem 0.25rem;
-    color: var(--secondary-text-color);
-    font-size: 0.9rem;
-    font-weight: 500;
+    padding: 0.8rem 1rem 0.35rem;
+    color: var(--primary-text-color);
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--divider-color);
   }
 
   .entur-empty {
@@ -34,12 +35,12 @@ export const cardStyle = css`
   }
 
   .entur-route {
-    padding: 1rem;
+    padding: 0.65rem 1rem;
     display: grid;
-    grid-gap: 10px;
+    grid-gap: 6px 10px;
     grid-template-columns: 24px 1fr;
     align-items: flex-start;
-    margin-block: 1rem;
+    margin: 0;
   }
 
   .entur-route.divided {
@@ -55,9 +56,9 @@ export const cardStyle = css`
     display: flex;
     flex-direction: row;
     align-items: center;
-    color: var(--primary-text-color);
-    font-size: 18px;
-    font-weight: 300;
+    color: var(--secondary-text-color);
+    font-size: 14px;
+    font-weight: 500;
     margin: 0;
   }
 
@@ -85,8 +86,8 @@ export const cardStyle = css`
     flex-direction: row;
     align-items: center;
     column-gap: 0.5rem;
-    margin-block: 0.25rem;
-    padding-block: 0.25rem;
+    margin-block: 0.1rem;
+    padding-block: 0.2rem;
   }
 
   .entur-line__header {
@@ -94,7 +95,7 @@ export const cardStyle = css`
     display: flex;
     flex-direction: column;
     row-gap: 0.15rem;
-    margin-top: 0.3rem;
+    margin-top: 0.1rem;
     color: var(--primary-text-color);
     font-size: 14px;
     font-weight: 400;
@@ -129,6 +130,8 @@ export const cardStyle = css`
 
   .entur-line__due {
     color: var(--dark-primary-color);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 
   .entur-line__due.icon-right {

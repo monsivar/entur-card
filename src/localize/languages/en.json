@@ -15,7 +15,8 @@
     "minutes": "minutes",
     "hour": "hour",
     "hours": "hours"
-    ,"unknown": "No upcoming departure"
+    ,"unknown": "No upcoming departure",
+    "all_departures": "All departures"
   },
   "editor": {
     "name": "Name",
@@ -25,6 +26,12 @@
     "divide_routes": "Divide routes",
     "group_by_device": "Group platforms by stop place",
     "devices": "Choose Entur stop places",
+    "search_devices": "Search stop places",
+    "no_devices": "No stop places match the search",
+    "show_stop_place": "Also show whole-stop departures",
+    "advanced_entities": "Advanced entity configuration",
+    "advanced_entities_help": "Use this for legacy YAML configurations or per-entity display settings.",
+    "entity": "Entity",
     "divide_lines": "Divide lines",
     "clock_icon_state": {
       "title": "Clock icon",

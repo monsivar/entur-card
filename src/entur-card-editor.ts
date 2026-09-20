@@ -41,6 +41,8 @@ export class EnturCardEditor
   @state() private _renderEmptySortable = false;
   @state() private _subElementEditorConfig?: SubElementEditorConfig;
   @state() private _enturDevices: DeviceRegistryEntry[] = [];
+  @state() private _enturEntityEntries: EntityRegistryEntry[] = [];
+  @state() private _deviceSearch = "";
 
   private _entities?;
   private _sortable?;
@@ -74,6 +76,7 @@ export class EnturCardEditor
     };
     this._entities = this._config.entities ?? [];
     this._registryLoaded = false;
+    this._deviceSearch = "";
   }
 
   protected render(): TemplateResult {
@@ -96,15 +99,25 @@ export class EnturCardEditor
       `;
     }
 
-    // Filter states to only include sensors, and only those with an attribute containing a "route_id".
+    // Filter states to only include Entur-like sensors.
     const sensorsWithRouteId = Object.values(this.hass!.states)
       .filter((entity) => entity.entity_id.startsWith("sensor."))
       .filter((sensor) =>
         Object.keys(sensor.attributes).some((key) =>
-          key.toLowerCase().includes("route_id")
+          key.toLowerCase().includes("route_id") ||
+          key.toLowerCase() === "departures" ||
+          key.toLowerCase() === "route"
         )
       )
       .map((sensor) => sensor.entity_id);
+
+    const query = this._deviceSearch.trim().toLowerCase();
+    const filteredDevices = this._enturDevices.filter((device) =>
+      `${device.name_by_user ?? ""} ${device.name ?? ""} ${device.id}`
+        .toLowerCase()
+        .includes(query)
+    );
+    const selectedDeviceCount = this._config.devices?.length ?? 0;
 
     return html`
       <div class="card-config">
@@ -143,80 +156,106 @@ export class EnturCardEditor
         ${this._enturDevices.length
           ? html`
               <div class="device-picker">
-                <p>${customLocalize("editor.devices")}</p>
-                ${this._enturDevices.map(
-                  (device) => html`
-                    <ha-formfield
-                      .label=${device.name_by_user ?? device.name ?? device.id}
-                    >
-                      <ha-checkbox
-                        .deviceId=${device.id}
-                        .checked=${this._config.devices?.includes(device.id)}
-                        @change=${this._deviceChanged}
-                      ></ha-checkbox>
-                    </ha-formfield>
-                  `
-                )}
+                <div class="device-picker__header">
+                  <p>${customLocalize("editor.devices")}</p>
+                  <span class="secondary">${selectedDeviceCount} valgt</span>
+                </div>
+                <textarea
+                  rows="1"
+                  inputmode="search"
+                  class="device-search"
+                  aria-label=${customLocalize("editor.search_devices")}
+                  placeholder=${customLocalize("editor.search_devices")}
+                  .value=${this._deviceSearch}
+                  @input=${this._deviceSearchChanged}
+                ></textarea>
+                ${filteredDevices.length
+                  ? filteredDevices.map(
+                      (device) => html`
+                        <div class="device-option">
+                          <ha-formfield
+                            .label=${device.name_by_user ?? device.name ?? device.id}
+                          >
+                            <ha-checkbox
+                              .deviceId=${device.id}
+                              .checked=${this._config.devices?.includes(device.id)}
+                              @change=${this._deviceChanged}
+                            ></ha-checkbox>
+                          </ha-formfield>
+                          <span class="secondary">(${this._deviceSensorCount(device.id)})</span>
+                        </div>
+                      `
+                    )
+                  : html`<div class="empty-message">${customLocalize("editor.no_devices")}</div>`}
+                <ha-formfield .label=${customLocalize("editor.show_stop_place")}>
+                  <ha-checkbox
+                    @change=${this._valueChanged}
+                    .checked=${this._config.show_stop_place ?? false}
+                    .configValue=${"show_stop_place"}
+                  ></ha-checkbox>
+                </ha-formfield>
               </div>
             `
           : html``}
 
-        <div class="entities">
-          ${guard([this._entities, this._renderEmptySortable], () =>
-            this._renderEmptySortable
-              ? ""
-              : this._entities?.map(
-                  (route, index) => html`
-                    <div class="entity">
-                      <div class="handle">
-                        <ha-icon icon="mdi:drag"></ha-icon>
-                      </div>
-                      ${html`
-                        <div class="special-row">
-                          <div>
-                            <span
-                              >${normalizeEntityConfig(route).name ?? normalizeEntityConfig(route).entity}</span
-                            >
-                            <span class="secondary">${normalizeEntityConfig(route).entity}</span>
+        <details class="advanced" ?open=${Boolean(this._entities?.length)}>
+          <summary>${customLocalize("editor.advanced_entities")}</summary>
+          <div class="advanced-content">
+            <div class="secondary">${customLocalize("editor.advanced_entities_help")}</div>
+            <div class="entities">
+              ${guard([this._entities, this._renderEmptySortable], () =>
+                this._renderEmptySortable
+                  ? ""
+                  : this._entities?.map(
+                      (route, index) => html`
+                        <div class="entity">
+                          <div class="handle">
+                            <ha-icon icon="mdi:drag"></ha-icon>
                           </div>
+                          <div class="special-row">
+                            <div>
+                              <span
+                                >${normalizeEntityConfig(route).name ?? normalizeEntityConfig(route).entity}</span
+                              >
+                              <span class="secondary">${normalizeEntityConfig(route).entity}</span>
+                            </div>
+                          </div>
+                          <ha-icon-button
+                            label="Remove"
+                            class="remove-icon"
+                            .index=${index}
+                            @click=${this._removeRow}
+                          >
+                            <ha-icon icon="mdi:close"></ha-icon>
+                          </ha-icon-button>
+                          <ha-icon-button
+                            label="Edit"
+                            class="edit-icon"
+                            .index=${index}
+                            @click=${this._editRow}
+                          >
+                            <ha-icon icon="mdi:pencil"></ha-icon>
+                          </ha-icon-button>
                         </div>
-                      `}
-                      <ha-icon-button
-                        label="Remove"
-                        class="remove-icon"
-                        .index=${index}
-                        @click=${this._removeRow}
-                      >
-                        <ha-icon icon="mdi:close"></ha-icon>
-                      </ha-icon-button>
-
-                      <ha-icon-button
-                        label="Edit"
-                        class="edit-icon"
-                        .index=${index}
-                        @click=${this._editRow}
-                      >
-                        <ha-icon icon="mdi:pencil"></ha-icon>
-                      </ha-icon-button>
-                    </div>
-                  `
-                )
-          )}
-        </div>
-
-        <mwc-select
-          label="Entity"
-          @selected="${this._addEntity}"
-          @closed="${(e) => e.stopPropagation()}"
-          fixedMenuPosition
-          naturalMenuWidth
-        >
-          ${sensorsWithRouteId.map(
-            (entity) => html`
-              <mwc-list-item .value=${entity}> ${entity} </mwc-list-item>
-            `
-          )}
-        </mwc-select>
+                      `
+                    )
+              )}
+            </div>
+            <mwc-select
+              .label=${customLocalize("editor.entity")}
+              @selected="${this._addEntity}"
+              @closed="${(e) => e.stopPropagation()}"
+              fixedMenuPosition
+              naturalMenuWidth
+            >
+              ${sensorsWithRouteId.map(
+                (entity) => html`
+                  <mwc-list-item .value=${entity}> ${entity} </mwc-list-item>
+                `
+              )}
+            </mwc-select>
+          </div>
+        </details>
       </div>
     `;
   }
@@ -318,6 +357,7 @@ export class EnturCardEditor
         callWS({ type: "config/device_registry/list" }),
       ]);
       const enturEntityEntries = (Array.isArray(entities) ? entities : []) as EntityRegistryEntry[];
+      this._enturEntityEntries = enturEntityEntries;
       const deviceIds = new Set(
         enturEntityEntries
           .filter((entry) => entry.platform === "entur_public_transport" && entry.device_id)
@@ -327,7 +367,21 @@ export class EnturCardEditor
         .filter((device) => deviceIds.has(device.id)) as DeviceRegistryEntry[];
     } catch {
       this._enturDevices = [];
+      this._enturEntityEntries = [];
     }
+  }
+
+  private _deviceSensorCount(deviceId: string): number {
+    return this._enturEntityEntries.filter(
+      (entry) =>
+        entry.device_id === deviceId &&
+        Boolean(this.hass?.states[entry.entity_id])
+    ).length;
+  }
+
+  private _deviceSearchChanged(ev: Event): void {
+    const target = ev.target as HTMLInputElement;
+    this._deviceSearch = target.value ?? "";
   }
 
   private _deviceChanged(ev: Event): void {

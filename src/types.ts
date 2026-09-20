@@ -28,6 +28,7 @@ export interface EnturCardConfig extends LovelaceCardConfig {
   entity?: string;
   entities?: Array<EnturCardEntityConfig | string>;
   devices?: string[];
+  show_stop_place?: boolean;
   state?: object;
   divide_routes?: boolean;
   display_time?: boolean;
@@ -42,6 +43,8 @@ export interface EntityRegistryEntry {
   entity_id: string;
   device_id?: string | null;
   platform?: string;
+  unique_id?: string;
+  original_name?: string | null;
 }
 
 export interface DeviceRegistryEntry {
