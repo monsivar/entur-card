@@ -52,7 +52,14 @@ export const styleEditor = css`
     margin-bottom: 0.5rem;
     opacity: 1;
     visibility: visible;
-    resize: none;
+    cursor: text;
+    line-height: 1.5;
+  }
+
+  .device-search:empty::before {
+    content: attr(data-placeholder);
+    color: var(--secondary-text-color);
+    pointer-events: none;
   }
 
   .device-search:focus {

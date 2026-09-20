@@ -160,15 +160,16 @@ export class EnturCardEditor
                   <p>${customLocalize("editor.devices")}</p>
                   <span class="secondary">${selectedDeviceCount} valgt</span>
                 </div>
-                <textarea
-                  rows="1"
-                  inputmode="search"
+                <div
+                  contenteditable="true"
+                  role="searchbox"
+                  spellcheck="false"
                   class="device-search"
                   aria-label=${customLocalize("editor.search_devices")}
-                  placeholder=${customLocalize("editor.search_devices")}
-                  .value=${this._deviceSearch}
+                  data-placeholder=${customLocalize("editor.search_devices")}
+                  .textContent=${this._deviceSearch}
                   @input=${this._deviceSearchChanged}
-                ></textarea>
+                ></div>
                 ${filteredDevices.length
                   ? filteredDevices.map(
                       (device) => html`
@@ -380,8 +381,8 @@ export class EnturCardEditor
   }
 
   private _deviceSearchChanged(ev: Event): void {
-    const target = ev.target as HTMLInputElement;
-    this._deviceSearch = target.value ?? "";
+    const target = ev.target as HTMLInputElement | HTMLElement;
+    this._deviceSearch = "value" in target ? target.value ?? "" : target.textContent ?? "";
   }
 
   private _deviceChanged(ev: Event): void {
